@@ -6,6 +6,7 @@ In this work, we present FactMM-RAG, a fact-aware multimodal retrieval-augmented
 ## 📅 Schedule
 
 - [x] Release the data preprocessing code
+- [ ] Release the factual report pair mining code
 - [ ] Release the retriever training code
 - [ ] Release the generator training code
 
