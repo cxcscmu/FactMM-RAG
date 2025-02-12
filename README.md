@@ -6,7 +6,7 @@ In this work, we present FactMM-RAG, a fact-aware multimodal retrieval-augmented
 ## 📅 Schedule
 
 - [x] Release the data preprocessing code
-- [ ] Release the factual report pair mining code
+- [x] Release the factual report pair mining code
 - [ ] Release the retriever training code
 - [ ] Release the generator training code
 
@@ -44,8 +44,29 @@ python ./data/label.py --input_path ./data/mimic/train.json \
                 --output_path ./data/mimic/train_labeled.json \
                 --device cuda   
 ```
-## 📚Citation
 
+## 📖 Factual Report Pairs Mining
+1. Generate factual similarity scores using annotations from RadGraph and CheXbert. Before running the scripts, ensure that you update the data paths accordingly. Since the training corpus is large, we utilize parallel processing with SLURM array jobs for efficiency. Run the following commands:
+```bash
+#Query: training reports | Corpus: training reports
+cd ./data/factual_mining/build_pos_train/
+sbatch gen_similarity.sh
+#Query: validation reports | Corpus: training reports
+cd ../build_pos_valid/
+sbatch gen_similarity.sh
+```
+2. Build query and Top-K reference report pairs based on factual similarity thresholds. Run the following command:
+```bash
+sh gen_topk_pos.sh
+
+cd ../build_pos_train/
+sbatch gen_topk_pos.sh
+sh merge_topk_pos.sh
+```
+
+
+
+## 📚Citation
 ```bibtex
 @misc{sun2025factawaremultimodalretrievalaugmentation,
       title={Fact-Aware Multimodal Retrieval Augmentation for Accurate Medical Radiology Report Generation}, 
