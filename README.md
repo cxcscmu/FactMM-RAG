@@ -52,16 +52,17 @@ python ./data/label.py --input_path ./data/mimic/train.json \
 cd ./data/factual_mining/build_pos_train/
 sbatch gen_similarity.sh
 #Query: validation reports | Corpus: training reports
-cd ../build_pos_valid/
+cd ./data/factual_mining/build_pos_valid/
 sbatch gen_similarity.sh
 ```
 2. Build query and Top-K reference report pairs based on factual similarity thresholds. Run the following command:
 ```bash
-sh gen_topk_pos.sh
-
-cd ../build_pos_train/
+cd ./data/factual_mining/build_pos_train/
 sbatch gen_topk_pos.sh
 sh merge_topk_pos.sh
+
+cd ./data/factual_mining/build_pos_valid/
+sh gen_topk_pos.sh
 ```
 
 
