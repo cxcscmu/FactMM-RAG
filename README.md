@@ -37,7 +37,7 @@ python ./data/parse.py --image_paths_file ./data/mimic/train.image.tok \
                  --impressions_file ./data/mimic/train.impression.tok \
                  --output_json_file ./data/mimic/train.json
 ```
-1. Annotate reports with radiological entities, clinical relations, and diagnostic labels using RadGraph and CheXbert:
+2. Annotate reports with radiological entities, clinical relations, and diagnostic labels using RadGraph and CheXbert:
 ```sh
 python ./data/label.py --input_path ./data/mimic/train.json \
                 --output_path ./data/mimic/train_labeled.json \
