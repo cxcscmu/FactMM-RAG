@@ -1,0 +1,7 @@
+[
+    {
+        "image":["path/to/radiology/frontal.jpg","path/to/radiology/lateral.jpg"],
+        "finding":"Frontal...",
+        "impression":"No acute...."
+    }
+]
