@@ -7,7 +7,7 @@ In this work, we present FactMM-RAG, a fact-aware multimodal retrieval-augmented
 
 - [x] Release the data preprocessing code
 - [x] Release the factual report pair mining code
-- [ ] Release the retriever training code
+- [x] Release the retriever training code
 - [ ] Release the generator training code
 
 
@@ -28,7 +28,7 @@ pip install -r requirements.txt
 
 3. Download the required dataset and checkpoint
    - Dataset: [MIMIC-CXR](https://vilmedic.app/papers/acl2023/) and [CheXpert](https://stanfordaimi.azurewebsites.net/datasets/8cbd9ed4-2eb9-4565-affc-111cf4f7ebe2)
-   - Checkpoint: [MARVEL](https://huggingface.co/OpenMatch/marvel-ance-clueweb/tree/main)
+   - Checkpoint: [MARVEL](https://huggingface.co/OpenMatch/marvel-ance-clueweb/tree/main) 
 
 ## 📖 Data Preprocessing
 1. Place the downloaded datasets in `./data/mimic` and `./data/chexpert`. We follow the official splitting and parse them into train, valid, and train files. To process the radiology dataset and generate the output JSON file, run the following command (e.g. train file parsing):
@@ -55,7 +55,7 @@ sbatch gen_similarity.sh
 cd ./data/factual_mining/build_pos_valid/
 sbatch gen_similarity.sh
 ```
-2. Build query and Top-K reference report pairs based on factual similarity thresholds. Run the following command:
+2. Construct query and Top-K reference report pairs based on factual similarity thresholds. Run the following command:
 ```bash
 cd ./data/factual_mining/build_pos_train/
 sbatch gen_topk_pos.sh
@@ -64,6 +64,24 @@ sh merge_topk_pos.sh
 cd ./data/factual_mining/build_pos_valid/
 sh gen_topk_pos.sh
 ```
+
+## 🚀 Training
+
+1. Place the downloaded MARVEL ckpt into `./src/checkpoint/`. Train the multimodal retriever using constructed query-image and reference-report pairs, incorporating in-batch negative sampling. Additionally, an optional training stage with hard negatives can be included to further enhance performance. Run the following command:
+```bash
+cd ./src/retriever/DPR
+sh train.sh
+sh gen_embeddings.sh
+
+#Optional ANCE Training
+sh gen_hard_negatives.sh
+cd ./src/retriever/ANCE
+sh train.sh
+sh gen_embeddings.sh
+```
+
+
+
 
 
 
