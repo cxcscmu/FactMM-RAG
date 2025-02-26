@@ -22,8 +22,8 @@ parser.add_argument('--is_conversational', action="store_true",
                     help="""Set to true if used for llava training / evaluation, Set to False if used for inference""")
 parser.add_argument('--output_path', type=str)
 args = parser.parse_args()
-print(vars(args))
-sys.stdout.flush()
+print(f"{vars(args)=}")
+
 faiss_knn_path = args.faiss_knn_path
 queries_data_path, corpus_data_path = args.queries_data_path, args.corpus_data_path
 rag_data_mode, output_data_mode = args.rag_data_mode, args.output_data_mode
@@ -42,97 +42,91 @@ print(f"{len(corpus_data)=} {len(query_data)=}")
 sys.stdout.flush()
 
 
-def extract_patient(image_path):
-    print(image_path)
-    return image_path.split("/")[-3]
+def extract_paths(image_path):
+    patient, study, file = image_path.split("/")[-3:]
+    return patient, study, file
+
+def indexes(data_json):
+    patient_index, study_index, _ = zip(*[extract_paths(v["image"]) for v in data_json])
+    return patient_index, study_index
+
+# These indexes are arrays, where arr[i] contains the patient id of patient_i
+query_patient_index, query_study_index = indexes(query_data)
+corpus_patient_index, corpus_study_index = indexes(corpus_data)
 
 
-def extract_study(image_path):
-    return image_path.split("/")[-3]
+output = []
 
+# Track how many times filters fail for top-1 result
+ct_self_study = 0
+ct_self_patient = 0
+ct_short = 0
+anomalies = []
 
-def idx_to_patient_index(data_json):
-    return [extract_patient(v["image"]) for v in data_json]
+for i, knn_sample_i in tqdm.tqdm(enumerate(faiss_knn_data), desc="queries..."):
+    query_idx = knn_sample_i["key"]  # idx of query
+    query_knn_rankings = knn_sample_i["knn_index"]
+    query_data_i = query_data[query_idx]  # correspondent sample. Dict with keys "image", "finding", "impression"
+    query_data_image_path = query_data_i["image"]
+    patient_id, study_id, _ = extract_paths(query_data_image_path)
 
+    chosen_document_idx = None
+    for rank, document_idx in enumerate(query_knn_rankings):
+        # make sure aren't self-study retrieving
+        if corpus_study_index[document_idx] == study_id:
+            # these things just check how often the nearest-neighbor fails a certain filter
+            ct_self_study += rank == 0
 
-def idx_to_study_index(data_json):
-    return [extract_study(v["image"]) for v in data_json]
+        # make sure aren't self-patient retrieving
+        elif corpus_patient_index[document_idx] == patient_id:
+            ct_self_patient += rank == 0
 
+        # findings sometimes have corrupted data, e.x "a.m." or "___"
+        # test_short shouldn't be active for impression data mode, since impressions can be short normally
+        elif test_short and len(corpus_data[document_idx][rag_data_mode].split()) < 5:
+            ct_short += rank == 0
 
-query_patient_index = idx_to_patient_index(query_data)
-query_study_index = idx_to_study_index(query_data)
-corpus_patient_index = idx_to_patient_index(corpus_data)
-corpus_study_index = idx_to_study_index(corpus_data)
-
-
-def build_dataset(knn_query_data, query_data, corpus_data,
-                  corpus_patient_index, corpus_study_index, is_conversational=True):
-    output = []
-    ct_patient = 0
-    ct_self_study = 0
-    ct_short = 0
-    anomalies = []
-    for i, v in tqdm.tqdm(enumerate(knn_query_data)):
-        yielded_index = None
-        knn_self_key = v["key"]  # idx of train_data
-        knn_data_i = query_data[knn_self_key]  # correspondent sample
-        patient_id = extract_patient(knn_data_i["image"][0])
-        study_id = extract_study(knn_data_i["image"][0])
-        for iteration_order, knn_idx in enumerate(v["knn_index"]):
-            # make sure aren't self-retrieving
-            if corpus_study_index[knn_idx] == study_id:
-                # these things just check how often the nearest-neighbor fails a certain filter
-                if iteration_order == 0:
-                    ct_self_study += 1
-            # make sure aren't self-patient retrieving
-            elif corpus_patient_index[knn_idx] == patient_id:
-                if iteration_order == 0:
-                    ct_patient += 1
-            # findings sometimes have corrupted data, e.x "a.m." or "___"
-            # test_short shouldn't be active for impression data mode, since impressions
-            # can be short normally
-            elif test_short and len(corpus_data[knn_idx][rag_data_mode].split()) < 5:
-                if iteration_order == 0:
-                    ct_short += 1
-            # if all filters pass, yield the index
-            else:
-                yielded_index = knn_idx
-                break
-        if yielded_index is None:
-            anomalies.append(knn_self_key)
-            yielded_index = v["knn_index"][0]
-        if is_conversational:
-            obj = {
-              "id": i,
-              "image": knn_data_i["image"][0],
-              "conversations": [
-                {
-                  "from": "human",
-                  "value": f"Here is a report of a related patient: \"{corpus_data[yielded_index][rag_data_mode]}\"\nGenerate a radiology report from this image:<image>"
-                },
-                {
-                  "from": "gpt",
-                  "value": f"{knn_data_i[output_data_mode]}"
-                }
-              ]
-            }
+        # if all filters pass, yield the index
         else:
-            obj = {
-              "question_id": i,
-              "image": knn_data_i["image"][0],
-              "text": f"Here is a report of a related patient: \"{corpus_data[yielded_index][rag_data_mode]}\"\nGenerate a radiology report from this image:"
+            chosen_document_idx = document_idx
+            break
+    
+    # Choose first document if none pass filters
+    if chosen_document_idx is None:
+        anomalies.append(query_idx)
+        chosen_document_idx = query_knn_rankings[0]
+    
+    retrieved_doc = corpus_data[chosen_document_idx][rag_data_mode]
+    if is_conversational:
+        obj = {
+            "id": i,
+            "image": query_data_image_path,
+            "conversations": [
+            {
+                "from": "human",
+                "value": f"Here is a report of a related patient: \"{retrieved_doc}\"\nGenerate a radiology report from this image:<image>"
+            },
+            {
+                "from": "gpt",
+                "value": f"{query_data_i[output_data_mode]}"
             }
-        output.append(obj)
-    print(f"{ct_patient=}, {ct_self_study=}, {ct_short=}")
-    # Anomalies are data samples that weren't able to yield valid results
-    print(f"(n={len(anomalies)}) {anomalies=}")
-    return output
+            ]
+        }
+    else:
+        obj = {
+            "question_id": i,
+            "image": query_data_image_path,
+            "text": f"Here is a report of a related patient: \"{retrieved_doc}\"\nGenerate a radiology report from this image:"
+        }
+    output.append(obj)
 
+# Anomalies are data samples that weren't able to yield valid results
+print(f"Data Quality: ")
+print(f"{ct_self_study=}, {ct_self_patient=}, {ct_short=}")
+print(f"n={len(anomalies)} anomalies, occuring at query id's: {anomalies}")
 
-dataset = build_dataset(faiss_knn_data, query_data, corpus_data,
-                        corpus_patient_index, corpus_study_index, is_conversational=is_conversational)
 
 print(f"Saving to: {output_path}")
 os.makedirs(os.path.dirname(output_path), exist_ok=True)
 with open(os.path.join(output_path), "w") as f:
-    json.dump(dataset, f, indent=2)
+    json.dump(output, f, indent=2)
