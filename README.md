@@ -79,11 +79,46 @@ cd ./src/retriever/ANCE
 sh train.sh
 sh gen_embeddings.sh
 ```
+## 🚀 RAG
 
+Using a trained retriever, follow instructions in `install_llava.sh` and also set the following environment variables
 
+```bash
+export IMAGE_FOLDER="path_to_image_folder"
+export PROJECTOR_PATH="path_to_llava_projector"
+```
 
+Build the RAG training and test datasets using the generated query and document embeddings
 
+```bash
+python ./src/generator/build_rag_dataset.py \
+  --faiss_knn_path ./data/rag/knn_te2tr.pkl \
+  --queries_data_path ./data/mimic/test.json \
+  --corpus_data_path ./data/mimic/train.json \
+  --rag_data_mode finding \
+  --output_data_mode finding \
+  --test_short \
+  --output_path ./data/rag/llava_data_te.json
 
+python ./src/generator/build_rag_dataset.py \
+  --faiss_knn_path ./data/rag/knn_tr2tr.pkl \
+  --queries_data_path ./data/mimic/train.json \
+  --corpus_data_path ./data/mimic/train.json \
+  --rag_data_mode finding \
+  --output_data_mode finding \
+  --test_short \
+  --is_conversational \
+  --output_path ./data/rag/llava_data_tr.json
+
+python src/generator/json_to_jsonl.py ./data/rag/llava_data_te.json
+```
+
+Then, train a LLaVA Model and run inference & scoring
+
+```bash
+./src/generator/train_llava.sh
+./src/generator/inference_llava.sh
+python src/generator/inference_jsonl_to_json.py ./data/rag/llava_output/test/merge_test_eval.jsonl
 
 ## 📚Citation
 ```bibtex

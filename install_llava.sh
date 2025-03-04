@@ -12,6 +12,9 @@ pip install -e .
 
 pip install -e ".[train]"
 pip install flash-attn --no-build-isolation
+# If flash-attn gets 404 error, set environment variable export `HUGGINGFACE_CO_TIMEOUT=60`
+
 
 # some additional upgrades
 pip install transformers[torch]
+pip install peft==0.10.0 transformers==4.36.2 accelerate==0.21.0 tokenizers==0.15.1
