@@ -119,6 +119,8 @@ Then, train a LLaVA Model and run inference & scoring
 ./src/generator/train_llava.sh
 ./src/generator/inference_llava.sh
 python src/generator/inference_jsonl_to_json.py ./data/rag/llava_output/test/merge_test_eval.jsonl
+./src/generator/evaluate_llava.sh
+```
 
 ## 📚Citation
 ```bibtex
