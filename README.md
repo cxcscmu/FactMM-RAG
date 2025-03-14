@@ -81,6 +81,18 @@ sh gen_embeddings.sh
 ```
 ## 🚀 RAG
 
+```bash
+python src/generator/knn.py \
+    --query_embedding_file test_embedding.pkl \
+    --corpus_embedding_file train_embedding.pkl \
+    --output_path ./data/rag/knn_te2tr.pkl
+
+python src/generator/knn.py \
+    --query_embedding_file train_embedding.pkl \
+    --corpus_embedding_file train_embedding.pkl \
+    --output_path ./data/rag/knn_tr2tr.pkl
+```
+
 Using a trained retriever, follow instructions in `install_llava.sh` and also set the following environment variables
 
 ```bash
