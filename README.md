@@ -81,6 +81,8 @@ sh gen_embeddings.sh
 ```
 ## 🚀 RAG
 
+To perform RAG, generate knn-indices using:
+
 ```bash
 python src/generator/knn.py \
     --query_embedding_file test_embedding.pkl \
@@ -92,6 +94,15 @@ python src/generator/knn.py \
     --corpus_embedding_file train_embedding.pkl \
     --output_path ./data/rag/knn_tr2tr.pkl
 ```
+
+Optionally, use top-k positives for oracle-retrieval for training data. This step is computationally much
+more expensive, but can be parallelized and achieves much greater downstream RAG performance. 
+
+```bash
+sh ./data/factual_mining/build_pos_train/gen_topk_oracle_train.sh
+python src/generator/knn_ideal.py 
+```
+
 
 Using a trained retriever, follow instructions in `install_llava.sh` and also set the following environment variables
 
@@ -112,6 +123,7 @@ python ./src/generator/build_rag_dataset.py \
   --test_short \
   --output_path ./data/rag/llava_data_te.json
 
+# Optionally, replace --faiss_knn_path with the training-time oracle top-1
 python ./src/generator/build_rag_dataset.py \
   --faiss_knn_path ./data/rag/knn_tr2tr.pkl \
   --queries_data_path ./data/mimic/train.json \
@@ -122,7 +134,9 @@ python ./src/generator/build_rag_dataset.py \
   --is_conversational \
   --output_path ./data/rag/llava_data_tr.json
 
-python src/generator/json_to_jsonl.py ./data/rag/llava_data_te.json
+python ./src/generator/convert_json_or_jsonl.py \
+    --file ./data/rag/2025_03_09_end_to_end/llava_data_te.json \
+    --overwrite
 ```
 
 Then, train a LLaVA Model and run inference & scoring
@@ -132,6 +146,32 @@ Then, train a LLaVA Model and run inference & scoring
 ./src/generator/inference_llava.sh
 python src/generator/inference_jsonl_to_json.py ./data/rag/llava_output/test/merge_test_eval.jsonl
 ./src/generator/evaluate_llava.sh
+```
+
+### Non-RAG VQA
+
+To train a non-RAG VQA model, first build the datasets:
+
+```bash
+python ./src/generator/build_nonrag_dataset.py \
+    --queries_data_path ./data/mimic/test.json \
+    --output_path ./data/rag/vqa/llava_vqa_test.json
+
+python ./src/generator/build_nonrag_dataset.py \
+    --queries_data_path ./data/mimic/train.json \
+    --is_conversational \
+    --output_path ./data/rag/vqa/llava_vqa_train.json
+
+python ./src/generator/convert_json_or_jsonl.py \
+    --file ./data/rag/vqa/llava_vqa_test.json \
+    --overwrite
+```
+Then, train a llava model
+
+```bash
+./src/generator/vqa/train_llava_vqa.sh
+./src/generator/vqa/inference_llava_vqa.sh
+./src/generator/vqa/eval_llava_vqa.sh
 ```
 
 ## 📚Citation
