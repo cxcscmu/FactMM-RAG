@@ -12,7 +12,7 @@ def main(args):
         
     with open(args.pred_path, "r") as f:
         pred_dict = json.load(f)
-
+    print(f"References size: {len(ref_dict)}, Preditions size: {len(pred_dict)}")
     hyps = []
     refs = []
     for ref, pred in zip(ref_dict, pred_dict):
@@ -26,7 +26,7 @@ def main(args):
     print("The number of testing dataset:", len(hyps))
 
     # F1RadGraph Evaluation
-    f1radgraph = F1RadGraph(reward_level=args.radgraph_level)
+    f1radgraph = F1RadGraph(reward_level=args.radgraph_level, model_type="radgraph")
     score, _, _, _ = f1radgraph(hyps=hyps, refs=refs)
     print("F1RadGraph:", score)
 
