@@ -52,22 +52,24 @@ def gen_txt_embeddings(model, valid_reader, findings_outpath):
 
 
 class MimicImgDataset(Dataset):
-    def __init__(self, args, img_path, preprocess, tokenizer):
+    def __init__(self, args, img_path, preprocess, tokenizer, image_folder=""):
 
         self.preprocess_fn = preprocess
         self.tokenizer = tokenizer
+        self.image_folder = image_folder
         self.img_paths = []
 
         with open(img_path, "r") as fin:
             images = json.load(fin)
             for i in range(len(images)):
-                self.img_paths.append(images[i]['image'][0])
+                self.img_paths.append(images[i]['image'])
                 
     def __len__(self):
         return len(self.img_paths)
 
     def encode_img(self, img, idx):
-        img = self.preprocess_fn(images=Image.open(img), return_tensors="pt")["pixel_values"][0]
+        prefix = "" if self.image_folder == "" else self.image_folder + "/"
+        img = self.preprocess_fn(images=Image.open(prefix + img), return_tensors="pt")["pixel_values"][0]
         return {'img': img}
 
     def Collector(self, batch):
@@ -125,15 +127,15 @@ if __name__ == '__main__':
     parser.add_argument("--t5_model_name", type=str, default='OpenMatch/t5-ance')
     parser.add_argument("--clip_model_name",type=str,default='openai/clip-vit-base-patch32')
     parser.add_argument("--saved_ckpt",type=str,default='/FactMM-RAG/src/retriever/output/dpr.best.pt')
-    parser.add_argument("--train_path",type=str,default='/FactMM-RAG/data/mimic/train.json') 
     parser.add_argument("--train_path",type=str,default='/FactMM-RAG/data/mimic/valid.json') 
+    parser.add_argument("--valid_path",type=str,default='/FactMM-RAG/data/mimic/valid.json') 
     parser.add_argument("--test_path",type=str,default='/FactMM-RAG/data/mimic/test.json')
+    parser.add_argument("--image_folder",type=str,default="")
 
     parser.add_argument("--output_train_image_path",type=str,default='/FactMM-RAG/DPR/embedding/train_embedding_image.pkl')      
     parser.add_argument("--output_train_finding_path",type=str,default='/FactMM-RAG/DPR/embedding/train_embedding_finding.pkl')    
     parser.add_argument("--output_valid_image_path",type=str,default='/FactMM-RAG/DPR/embedding/valid_embedding_image.pkl')     
     parser.add_argument("--output_test_image_path",type=str,default='/FactMM-RAG/DPR/embedding/test_embedding_image.pkl')     
-    
     args = parser.parse_args()
 
     t5_tokenizer, model, image_processor = load_model(args,device)
@@ -142,8 +144,9 @@ if __name__ == '__main__':
     
     args.img_patch_token_size=get_img_patch_token_size(args.clip_model_name)
     train_path = args.train_path
-    test_path = args.test_path
     valid_path = args.valid_path
+    test_path = args.test_path
+    image_folder = args.image_folder
 
     txt_data = MimicTxtDataset(train_path, t5_tokenizer)
     sampler = SequentialSampler(txt_data)
@@ -151,21 +154,20 @@ if __name__ == '__main__':
                             batch_size=32, collate_fn=txt_data.Collector) 
     gen_txt_embeddings(model, txt_reader, args.output_train_finding_path)    
     
-    img_data = MimicImgDataset(args, train_path, image_processor, t5_tokenizer)        
+    img_data = MimicImgDataset(args, train_path, image_processor, t5_tokenizer, image_folder)        
     sampler = SequentialSampler(img_data)
     img_reader = DataLoader(dataset=img_data, sampler=sampler, num_workers=10,
                             batch_size=32, collate_fn=img_data.Collector) 
     gen_img_embeddings(model, img_reader, args.output_train_image_path) 
  
-    img_data = MimicImgDataset(args, valid_path, image_processor, t5_tokenizer)        
+    img_data = MimicImgDataset(args, valid_path, image_processor, t5_tokenizer, image_folder)        
     sampler = SequentialSampler(img_data)
     img_reader = DataLoader(dataset=img_data, sampler=sampler, num_workers=10,
                             batch_size=32, collate_fn=img_data.Collector) 
     gen_img_embeddings(model, img_reader, args.output_valid_image_path) 
  
-
-        
-    img_data = MimicImgDataset(args, test_path, image_processor, t5_tokenizer)        
+ 
+    img_data = MimicImgDataset(args, test_path, image_processor, t5_tokenizer, image_folder)        
     sampler = SequentialSampler(img_data)
     img_reader = DataLoader(dataset=img_data, sampler=sampler, num_workers=10,
                             batch_size=32, collate_fn=img_data.Collector) 

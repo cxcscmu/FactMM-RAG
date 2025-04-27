@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name="gen_pos_train.sh"
+#SBATCH --job-name="gen_topk_oracle_train.sh"
 #SBATCH -o ./tr_reports/%x-%a.out
 #SBATCH -e ./tr_reports/%x-%a.err
 #SBATCH --partition=general
@@ -10,19 +10,18 @@
 #SBATCH --time=04:00:00
 #SBATCH --array=0-63%8
 
+# Note thresholds are 0.0 for exhaustive training-time search
 tr_chunks=64
-chex_thresh=1.0
-top_k=3
-radg_thresh=0.4
+chex_thresh=0.0
+top_k=30
+radg_thresh=0.0
 
-start=$(date +%s)
 expname=top_${top_k}_c${chex_thresh}_r${radg_thresh}
 echo "=== topk: $top_k, radg_thresh: $radg_thresh ==="
-python gen_topk_pos.py \
+python ./data/factual_mining/build_pos_train/gen_topk_pos.py \
     --from_folder "./data/mimic/scoring_chunks_train" \
     --do_chex \
     --do_radg \
-    --skip_bad_sample \
     --num_chunks $tr_chunks \
     --n 125417 \
     --chunk_id $SLURM_ARRAY_TASK_ID \
@@ -31,7 +30,3 @@ python gen_topk_pos.py \
     --pre_mask_chex $chex_thresh \
     --pre_mask_radg $radg_thresh \
     --top_k $top_k
-
-end=$(date +%s) &&
-runtime=$((end-start)) &&
-echo "Time Taken: $runtime s"

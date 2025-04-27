@@ -21,9 +21,9 @@ def process_split(image_paths_file, findings_file, impressions_file, output_json
     
     for i in range(len(image_path_lines)):
         image_paths = image_path_lines[i].split(',')  # Split multiple image paths
-        
-        entries = [{"image": image_path.strip(), "text": findings[i], "impression": imps[i]} for image_path in image_paths]
-        all_entries.extend(entries)
+        image_path = image_paths[0]
+        entries = {"image": image_path.strip(), "finding": findings[i], "impression": imps[i]}
+        all_entries.append(entries)
     
     # Write all entries to the single JSON file
     with open(output_json_file, 'w') as json_file:

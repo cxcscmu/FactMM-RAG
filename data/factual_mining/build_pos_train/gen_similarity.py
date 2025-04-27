@@ -31,9 +31,9 @@ out_chexbert_sims = np.zeros((end - start, n))
 out_radgraph_sims = np.zeros((end - start, n))
 a = time.time()
 for i in tqdm.tqdm(range(start, end), desc="outer"):
-  query_i = obj[i]['finding']
+  query_i = obj[i]
   for j in range(n):
-    doc_j = obj[j]['finding']
+    doc_j = obj[j]
     chex_sim = chexbert_similarity(query_i, doc_j)
     radg_sim = radgraph_similarity(query_i, doc_j)
     out_chexbert_sims[i - start, j] = chex_sim
