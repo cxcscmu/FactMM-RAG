@@ -176,4 +176,10 @@ cython_debug/
 # FactMM-RAG
 data/rag/*
 data/mimic/*
+data/ANCE/*
 LLaVA/
+
+ANCE/
+cmd.sh
+src/generator/gitignore/
+.vscode/

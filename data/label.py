@@ -26,8 +26,11 @@ def process_labels(input_path, output_path, device="cuda"):
     for instance in tqdm(data, desc="Processing reports"):
         report = instance["finding"]
         annotations = radgraph([report])
-        report["entities"] = annotations["0"]["entities"]
         label = chexbert.get_label(report)
+        report = {
+            "text": report
+        }
+        report["entities"] = annotations["0"]["entities"]
         report["label"] = (np.array(label)[target_names_5_index]).tolist()
         labeled_data.append(report)
     

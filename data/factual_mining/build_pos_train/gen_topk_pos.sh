@@ -19,14 +19,14 @@ start=$(date +%s)
 expname=top_${top_k}_c${chex_thresh}_r${radg_thresh}
 echo "=== topk: $top_k, radg_thresh: $radg_thresh ==="
 python gen_topk_pos.py \
-    --from_folder "/FactMM-RAG/data/mimic/scoring_chunks_train" \
+    --from_folder "./data/mimic/scoring_chunks_train" \
     --do_chex \
     --do_radg \
     --skip_bad_sample \
     --num_chunks $tr_chunks \
     --n 125417 \
     --chunk_id $SLURM_ARRAY_TASK_ID \
-    --output_file "/FactMM-RAG/data/mimic/scoring_chunks_train/$expname/chunk_$SLURM_ARRAY_TASK_ID.pkl" \
+    --output_file "./data/mimic/scoring_chunks_train/$expname/chunk_$SLURM_ARRAY_TASK_ID.pkl" \
     --pre_mask \
     --pre_mask_chex $chex_thresh \
     --pre_mask_radg $radg_thresh \

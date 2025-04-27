@@ -104,7 +104,7 @@ python src/generator/knn_ideal.py
 ```
 
 
-Using a trained retriever, follow instructions in `install_llava.sh` and also set the following environment variables
+Using a trained retriever, follow instructions in `install_llava.sh` and also set the following environment variables. 
 
 ```bash
 export IMAGE_FOLDER="path_to_image_folder"

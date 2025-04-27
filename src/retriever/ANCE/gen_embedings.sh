@@ -21,6 +21,7 @@ python gen_embeddings.py --t5_model_name $T5_MODEL_NAME \
                  --train_path $TRAIN_PATH \
                  --valid_path $VALID_PATH \
                  --test_path $TEST_PATH \
+                 --image_folder $IMAGE_FOLDER \
                  --output_train_image_path $OUTPUT_TRAIN_IMAGE_PATH \
                  --output_train_finding_path $OUTPUT_TRAIN_FINDING_PATH \
                  --output_valid_image_path $OUTPUT_VALID_IMAGE_PATH \
