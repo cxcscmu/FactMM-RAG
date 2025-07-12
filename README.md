@@ -81,6 +81,7 @@ sh gen_embeddings.sh
 ```
 ## 🚀 RAG
 
+Checkpoint: https://drive.google.com/file/d/1qV-atZdKX-PwBSWzEocf5I63vuF9Ri-g/view?usp=sharing
 To perform RAG, generate knn-indices using:
 
 ```bash
